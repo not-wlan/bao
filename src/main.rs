@@ -34,7 +34,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
             Arg::with_name("config")
                 .short("c")
                 .long("config")
-                .value_name("FILE")
+                .value_name("CONFIG")
                 .help("Sets a custom config file")
                 .takes_value(true),
         )
@@ -66,7 +66,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
 
     // Default to appending .pdb to the input path if no other path is specified
     let output = matches
-        .value_of("OUTPUT")
+        .value_of("output")
         .map(|output| output.to_string())
         .unwrap_or(format!("{}.pdb", path));
 
@@ -75,13 +75,19 @@ pub fn main() -> Result<(), Box<dyn Error>> {
 
     // Load configuration or default to empty configuration. This will still add
     // structures and function prototypes to the PDB.
-    let config = match matches.value_of("CONFIG") {
+    let config = match matches.value_of("config") {
         None => Ok(BaoConfiguration::default()),
         Some(config) => {
             let config = std::fs::read_to_string(config)?;
             serde_json::from_str(&config)
         }
     }?;
+
+    info!(
+        "Loaded {} functions and {} globals.",
+        config.functions.len(),
+        config.globals.len()
+    );
 
     // This needs to happen (on Linux atleast), otherwise clang won't load.
     clang_sys::load()?;

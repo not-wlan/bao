@@ -19,7 +19,7 @@ version = "1.0.1"
 features = ["clang_10_0"]
 
 [dependencies.pdb_wrapper]
-path = "../pdb_wrapper"
+git = "https://github.com/not-wlan/pdb_wrapper"
 
 [dependencies.clang]
 version = "~1.0"
