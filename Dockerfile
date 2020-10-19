@@ -13,4 +13,17 @@ COPY ./Cargo.toml .
 COPY ./Cargo.lock .
 COPY ./src/ /app/src/
 
-RUN cargo update -p pdb_wrapper && cargo install --path .
+RUN cargo update -p pdb_wrapper && cargo install --path . --target-dir /app/bin
+
+RUN ls -alh /app/bin/release
+
+FROM debian:buster-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y curl wget gnupg
+# Add the LLVM public key to verify the repos
+RUN bash -c "wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -"
+# Add the LLVM repos
+RUN printf "deb http://apt.llvm.org/buster/ llvm-toolchain-buster-10 main\ndeb-src http://apt.llvm.org/buster/ llvm-toolchain-buster-10 main" > /etc/apt/sources.list.d/backports.list
+# Install dependencies
+RUN apt-get update && apt-get install -y libllvm10 llvm-10-runtime libclang1-10 gcc-multilib
+COPY --from=0 /app/bin/release/bao /usr/bin/
