@@ -30,6 +30,18 @@ fn add_signed(first: usize, second: isize) -> Option<usize> {
 impl BaoSymbol {
     pub fn find(&self, data: &[u8], imagebase: usize) -> Result<(usize, bool), BaoError> {
         let mut va = false;
+
+        let peek_bytes = |offset| -> Result<u32, BaoError> {
+            let bfr: &[u8; 4] =
+                &data[offset..offset + 4]
+                    .try_into()
+                    .map_err(|_| BaoError::BadPattern {
+                        pattern: self.pattern.clone(),
+                    })?;
+
+            Ok(u32::from_le_bytes(*bfr))
+        };
+
         let regex = self
             .pattern
             .split_ascii_whitespace()
@@ -58,14 +70,7 @@ impl BaoSymbol {
                 result = add_signed(result, *deref).ok_or(BaoError::BadPattern {
                     pattern: self.pattern.clone(),
                 })?;
-                // TODO: 64bit?
-                let bfr: &[u8; 4] =
-                    &data[result..result + 4]
-                        .try_into()
-                        .map_err(|_| BaoError::BadPattern {
-                            pattern: self.pattern.clone(),
-                        })?;
-                result = u32::from_le_bytes(*bfr) as usize;
+                result = peek_bytes(result)? as usize;
                 va = true;
             }
 
@@ -74,13 +79,7 @@ impl BaoSymbol {
             })?;
 
             if self.rip_relative {
-                let bfr: &[u8; 4] =
-                    &data[result..result + 4]
-                        .try_into()
-                        .map_err(|_| BaoError::BadPattern {
-                            pattern: self.pattern.clone(),
-                        })?;
-                result = (result as u32).wrapping_add(u32::from_le_bytes(*bfr)) as usize;
+                result = (result as u32).wrapping_add(peek_bytes(result)?) as usize;
                 result = add_signed(result, self.rip_offset).ok_or(BaoError::BadPattern {
                     pattern: self.pattern.clone(),
                 })?;
