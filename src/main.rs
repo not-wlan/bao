@@ -102,17 +102,24 @@ pub fn main() -> Result<(), Box<dyn Error>> {
 
     let clang = Clang::new()?;
     let index = Index::new(&clang, false, false);
-
-    let tu = BaoTU::from(
-        index
-            .parser(source)
-            .arguments(if pe.is_64 {
-                &["-Werror"]
-            } else {
-                &["-m32", "-Werror"]
-            })
-            .parse()?,
-    );
+    let mut args = Vec::new();
+    let coptions = matches.values_of("coptions");
+    if coptions.is_some() {
+        let copts= coptions.unwrap();
+        for coption in copts {
+            let unquoted = coption.replace("\"","");
+            args.push(unquoted);
+        }
+    }
+    if pe.is_64 {
+        //args.push(String::from("-Werror"));
+    } else {
+        args.push(String::from("-m32"));
+        //args.push(String::from("-Werror"));
+    }
+    let v2: Vec<&str> = args.iter().map(|s| &**s).collect();
+    let v3 = v2.as_slice();
+    let tu = BaoTU::from(index.parser(source).arguments(v3).parse()?);
 
     let mut generated = pdb_wrapper::PDB::new(false)?;
 
