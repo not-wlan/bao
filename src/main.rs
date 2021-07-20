@@ -58,6 +58,14 @@ pub fn main() -> Result<(), Box<dyn Error>> {
                 .required(true)
                 .index(2),
         )
+        .arg(
+            Arg::with_name("coptions")
+                .short("d")
+                .long("coptions")
+                .required(false)
+                .multiple(true)
+                .takes_value(true),
+        )
         .get_matches();
 
     // Unwrapping these is fine since they're marked as required.
