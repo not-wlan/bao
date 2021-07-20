@@ -6,7 +6,9 @@ use std::convert::TryInto;
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct BaoSymbol {
     pub(crate) name: String,
+    #[serde(default)]
     pub(crate) pattern: String,
+    pub(crate) start_rva:isize,
     #[serde(default)]
     extra: isize,
     #[serde(default)]
