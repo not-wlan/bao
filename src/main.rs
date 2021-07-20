@@ -13,6 +13,7 @@ use clap::{App, Arg};
 use log::{error, info, warn};
 use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 use std::{collections::HashMap, convert::TryFrom, error::Error};
+use clang::diagnostic::Severity;
 
 mod error;
 mod matching;
@@ -124,11 +125,17 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     let mut generated = pdb_wrapper::PDB::new(false)?;
 
     if tu.has_errors() {
+        let mut significant_error_found = false;
         for error in tu.get_diagnostics() {
+            if error.get_severity() > Severity::Warning {
+                significant_error_found = true;
+            }
             error!("{}", error);
         }
         info!("Please fix these errors before continuing!");
-        return Ok(());
+        if significant_error_found {
+            return Ok(());
+        }
     }
 
     let funcs = tu.get_entities(EntityKind::FunctionDecl);
