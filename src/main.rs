@@ -105,29 +105,22 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     let index = Index::new(&clang, false, false);
     let mut args = Vec::new();
     let coptions = matches.values_of("coptions");
-    if coptions.is_some() {
-        let copts= coptions.unwrap();
+    if let Some(copts) = coptions {
         for coption in copts {
             let unquoted = coption.replace("\"","");
             args.push(unquoted);
         }
     }
-    if pe.is_64 {
-        //args.push(String::from("-Werror"));
-    } else {
+    if !(pe.is_64) {
         args.push(String::from("-m32"));
-        //args.push(String::from("-Werror"));
     }
     let v2: Vec<&str> = args.iter().map(|s| &**s).collect();
     let v3 = v2.as_slice();
     let tu = BaoTU::from(index.parser(source).arguments(v3).parse()?);
     let mut generated = pdb_wrapper::PDB::new(pe.is_64)?;
-    let pe_original_pdb_data_access = pe.debug_data;
-    if pe_original_pdb_data_access.is_some() {
-        let innerdata = pe_original_pdb_data_access.unwrap().codeview_pdb70_debug_info;
-        if innerdata.is_some() {
-            let pdb_data = innerdata.unwrap();
-            generated = pdb_wrapper::PDB::new2(pe.is_64, pdb_data.age, pdb_data.codeview_signature, pdb_data.signature)?;
+    if let Some(pe_original_pdb_data_access) = pe.debug_data {
+        if let Some(innerdata) = pe_original_pdb_data_access.codeview_pdb70_debug_info {
+            generated = pdb_wrapper::PDB::new2(pe.is_64, innerdata.age, innerdata.codeview_signature, innerdata.signature)?;
         }
     }
 
