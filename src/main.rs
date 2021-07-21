@@ -121,8 +121,15 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     let v2: Vec<&str> = args.iter().map(|s| &**s).collect();
     let v3 = v2.as_slice();
     let tu = BaoTU::from(index.parser(source).arguments(v3).parse()?);
-
-    let mut generated = pdb_wrapper::PDB::new(false)?;
+    let mut generated = pdb_wrapper::PDB::new(pe.is_64)?;
+    let pe_original_pdb_data_access = pe.debug_data;
+    if pe_original_pdb_data_access.is_some() {
+        let innerdata = pe_original_pdb_data_access.unwrap().codeview_pdb70_debug_info;
+        if innerdata.is_some() {
+            let pdb_data = innerdata.unwrap();
+            generated = pdb_wrapper::PDB::new2(pe.is_64, pdb_data.age, pdb_data.codeview_signature, pdb_data.signature)?;
+        }
+    }
 
     if tu.has_errors() {
         let mut significant_error_found = false;
