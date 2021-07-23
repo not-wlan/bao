@@ -20,17 +20,18 @@ mod matching;
 mod parsing;
 mod pe;
 #[cfg(not(llvm_13))]
-fn get_pdb(pe: BaoPE) {
-    return pdb_wrapper::PDB::new(pe.is_64)?;
+fn get_pdb(pe: &BaoPE) -> Result<pdb_wrapper::PDB, pdb_wrapper::Error> {
+    pdb_wrapper::PDB::new(pe.is_64)
 }
 
 #[cfg(llvm_13)]
-fn get_pdb(pe: BaoPE) {
+fn get_pdb(pe: &BaoPE) -> Result<pdb_wrapper::PDB, pdb_wrapper::Error> {
     if let Some(pe_original_pdb_data_access) = pe.debug_data {
         if let Some(innerdata) = pe_original_pdb_data_access.codeview_pdb70_debug_info {
-            return pdb_wrapper::PDB::new(pe.is_64, innerdata.age, innerdata.codeview_signature, innerdata.signature)?;
+            return pdb_wrapper::PDB::new(pe.is_64, innerdata.age, innerdata.codeview_signature, innerdata.signature);
         }
     }
+    return pdb_wrapper::PDB::new(pe.is_64,1,0,uuid::Uuid::from_bytes(rand::thread_rng().gen::<[u8; 16]>()).as_bytes());
 }
 
 pub fn main() -> Result<(), Box<dyn Error>> {
@@ -130,7 +131,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     let v2: Vec<&str> = args.iter().map(|s| &**s).collect();
     let v3 = v2.as_slice();
     let tu = BaoTU::from(index.parser(source).arguments(v3).parse()?);
-    let mut generated = get_pdb(pe);
+    let mut generated = get_pdb(&pe)?;
 
     if tu.has_errors() {
         let mut significant_error_found = false;
