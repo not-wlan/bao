@@ -19,6 +19,19 @@ mod error;
 mod matching;
 mod parsing;
 mod pe;
+#[cfg(not(llvm_13))]
+fn get_pdb(pe: BaoPE) {
+    return pdb_wrapper::PDB::new(pe.is_64)?;
+}
+
+#[cfg(llvm_13)]
+fn get_pdb(pe: BaoPE) {
+    if let Some(pe_original_pdb_data_access) = pe.debug_data {
+        if let Some(innerdata) = pe_original_pdb_data_access.codeview_pdb70_debug_info {
+            return pdb_wrapper::PDB::new(pe.is_64, innerdata.age, innerdata.codeview_signature, innerdata.signature)?;
+        }
+    }
+}
 
 pub fn main() -> Result<(), Box<dyn Error>> {
     CombinedLogger::init(vec![TermLogger::new(
@@ -117,12 +130,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     let v2: Vec<&str> = args.iter().map(|s| &**s).collect();
     let v3 = v2.as_slice();
     let tu = BaoTU::from(index.parser(source).arguments(v3).parse()?);
-    let mut generated = pdb_wrapper::PDB::new(pe.is_64)?;
-    if let Some(pe_original_pdb_data_access) = pe.debug_data {
-        if let Some(innerdata) = pe_original_pdb_data_access.codeview_pdb70_debug_info {
-            generated = pdb_wrapper::PDB::new2(pe.is_64, innerdata.age, innerdata.codeview_signature, innerdata.signature)?;
-        }
-    }
+    let mut generated = get_pdb(pe);
 
     if tu.has_errors() {
         let mut significant_error_found = false;

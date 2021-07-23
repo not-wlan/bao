@@ -29,3 +29,7 @@ features = ["clang_10_0"]
 [dependencies.goblin]
 version = "~0.2"
 features = ["std"]
+[features]
+default = ["llvm_10"]
+llvm_10 = []
+llvm_13 = []
