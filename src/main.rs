@@ -170,7 +170,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     // aren't included in a pattern.
     let func_types = funcs
         .into_iter()
-        .map(|func| BaoFunc::try_from(func))
+        .map(BaoFunc::try_from)
         .collect::<Result<Vec<_>, BaoError>>()?
         .into_iter()
         .map(|func| {
@@ -189,7 +189,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
         .map(|(ty, result)| {
             generated
                 .insert_function(result.index, result.offset, &result.name, ty.cloned())
-                .map_err(|e| BaoError::from(e))
+                .map_err( BaoError::from)
         })
         .collect::<Result<_, BaoError>>()?;
 
@@ -209,7 +209,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
         .map(|(ty, result)| {
             generated
                 .insert_global(&result.name, result.index, result.offset, ty)
-                .map_err(|e| BaoError::from(e))
+                .map_err(BaoError::from)
         })
         .collect::<Result<_, BaoError>>()?;
 
@@ -219,6 +219,6 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     warnings.into_iter().for_each(|err| warn!("{}", err));
 
     // Finally, save the generated PDB to the path we calculated in the beginning
-    generated.commit(&path, &output)?;
+    generated.commit(path, &output)?;
     Ok(())
 }

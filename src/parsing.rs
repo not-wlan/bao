@@ -10,18 +10,18 @@ pub(crate) struct BaoFunc {
     pub(crate) cconv: CConv,
 }
 
-impl Into<PDBFunction> for BaoFunc {
-    fn into(self) -> PDBFunction {
-        PDBFunction::new(self.retn, &self.args, self.cconv)
+impl From<BaoFunc> for PDBFunction {
+    fn from(s: BaoFunc) -> PDBFunction {
+        PDBFunction::new(s.retn, &s.args, s.cconv)
     }
 }
 
 #[derive(Debug)]
 pub(crate) struct BaoType(PDBType);
 
-impl Into<PDBType> for BaoType {
-    fn into(self) -> PDBType {
-        self.0
+impl From<BaoType> for PDBType {
+    fn from(s:BaoType) -> PDBType {
+        s.0
     }
 }
 
@@ -195,7 +195,7 @@ impl<'tu> TryFrom<Type<'tu>> for BaoFunc {
                 function: value.get_display_name(),
             })?
             .into_iter()
-            .map(|ty| BaoType::try_from(ty))
+            .map(BaoType::try_from)
             .map(|ty| ty.map(|ty| ty.into()))
             .collect::<Result<Vec<PDBType>, BaoError>>()?;
 
