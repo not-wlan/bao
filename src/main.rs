@@ -19,12 +19,12 @@ mod error;
 mod matching;
 mod parsing;
 mod pe;
-#[cfg(not(llvm_13))]
+#[cfg(not(feature = "llvm_13"))]
 fn get_pdb(pe: &BaoPE) -> Result<pdb_wrapper::PDB, pdb_wrapper::Error> {
     pdb_wrapper::PDB::new(pe.is_64)
 }
 
-#[cfg(llvm_13)]
+#[cfg(feature = "llvm_13")]
 fn get_pdb(pe: &BaoPE) -> Result<pdb_wrapper::PDB, pdb_wrapper::Error> {
     if let Some(pe_original_pdb_data_access) = pe.debug_data {
         if let Some(innerdata) = pe_original_pdb_data_access.codeview_pdb70_debug_info {
