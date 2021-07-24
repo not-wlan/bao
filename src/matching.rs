@@ -8,7 +8,8 @@ pub(crate) struct BaoSymbol {
     pub(crate) name: String,
     #[serde(default)]
     pub(crate) pattern: String,
-    pub(crate) start_rva:isize,
+    #[serde(default)]
+    pub(crate) start_rva:usize,
     #[serde(default)]
     extra: isize,
     #[serde(default)]
