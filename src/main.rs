@@ -14,6 +14,7 @@ use log::{error, info, warn};
 use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 use std::{collections::HashMap, convert::TryFrom, error::Error};
 use clang::diagnostic::Severity;
+use rand::Rng;
 
 mod error;
 mod matching;
@@ -31,7 +32,8 @@ fn get_pdb(pe: &BaoPE) -> Result<pdb_wrapper::PDB, pdb_wrapper::Error> {
             return pdb_wrapper::PDB::new(pe.is_64, innerdata.age, innerdata.codeview_signature, innerdata.signature);
         }
     }
-    return pdb_wrapper::PDB::new(pe.is_64,1,0,uuid::Uuid::from_bytes(rand::thread_rng().gen::<[u8; 16]>()).as_bytes());
+    let myarray:[u8; 16] = rand::thread_rng().gen();
+    return pdb_wrapper::PDB::new(pe.is_64, 1, 0, *uuid::Uuid::from_bytes(myarray).as_bytes());
 }
 
 pub fn main() -> Result<(), Box<dyn Error>> {
