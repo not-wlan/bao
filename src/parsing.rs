@@ -76,7 +76,9 @@ impl<'tu> TryFrom<Entity<'tu>> for BaoStruct {
             })
             .collect::<Result<Vec<_>, BaoError>>()?;
 
-        let size = ty.get_sizeof().map_err(|_| BaoError::InvalidStructSize)?;
+        let size = ty.get_sizeof().map_err(|serr| BaoError::InvalidStructSize {
+            message: format!("{}:{}", ty.get_display_name(), serr)
+        })?;
 
         Ok(BaoStruct { name, fields, size })
     }
