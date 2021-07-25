@@ -42,7 +42,10 @@ pub enum BaoError {
         name: String,
     },
     InvalidStruct,
-    InvalidStructSize,
+    #[snafu(display("Error during struct size deriving: {:#?}", message))]
+    InvalidStructSize {
+        message: String,
+    },
     InvalidOffset,
     #[snafu(display("Error during type translation: {:#?}", message))]
     TypeError {
