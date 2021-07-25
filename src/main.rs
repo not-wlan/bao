@@ -9,6 +9,7 @@ use crate::{
     parsing::{BaoTU, BaoType},
     pe::BaoPE,
 };
+use clang::diagnostic::Severity;
 use clap::{App, Arg};
 use log::{error, info, warn};
 use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
@@ -58,6 +59,14 @@ pub fn main() -> Result<(), Box<dyn Error>> {
                 .required(true)
                 .index(2),
         )
+        .arg(
+            Arg::with_name("coptions")
+                .short("d")
+                .long("coptions")
+                .required(false)
+                .multiple(true)
+                .takes_value(true),
+        )
         .get_matches();
 
     // Unwrapping these is fine since they're marked as required.
@@ -95,25 +104,50 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     let clang = Clang::new()?;
     let index = Index::new(&clang, false, false);
 
-    let tu = BaoTU::from(
-        index
-            .parser(source)
-            .arguments(if pe.is_64 {
-                &["-Werror"]
-            } else {
-                &["-m32", "-Werror"]
-            })
-            .parse()?,
-    );
+    let mut args = matches
+        .values_of("coptions")
+        .map(|values| {
+            values
+                .map(|value| value.replace('\"', ""))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
 
-    let mut generated = pdb_wrapper::PDB::new(false)?;
+    if !pe.is_64 {
+        args.push(String::from("-m32"));
+    }
+
+    let tu = BaoTU::from(index.parser(source).arguments(&args).parse()?);
+
+    #[cfg(not(feature = "llvm_13"))]
+    let mut generated = pdb_wrapper::PDB::new(pe.is_64)?;
+
+    #[cfg(feature = "llvm_13")]
+    let mut generated = {
+        let guid = pe
+            .debug_data
+            .and_then(|dbg| dbg.codeview_pdb70_debug_info)
+            .map(|code_view| code_view.signature)
+            .unwrap_or_else(|| *uuid::Uuid::new_v4().as_bytes());
+
+        pdb_wrapper::PDB::new(pe.is_64, 1, 0, guid)
+    }?;
 
     if tu.has_errors() {
-        for error in tu.get_diagnostics() {
-            error!("{}", error);
-        }
+        let has_errors = tu
+            .get_diagnostics()
+            .iter()
+            .any(|diag| diag.get_severity() > Severity::Warning);
+
+        tu.get_diagnostics()
+            .iter()
+            .for_each(|err| error!("{}", err));
+
         info!("Please fix these errors before continuing!");
-        return Ok(());
+
+        if has_errors {
+            return Ok(());
+        }
     }
 
     let funcs = tu.get_entities(EntityKind::FunctionDecl);
@@ -139,7 +173,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     // aren't included in a pattern.
     let func_types = funcs
         .into_iter()
-        .map(|func| BaoFunc::try_from(func))
+        .map(BaoFunc::try_from)
         .collect::<Result<Vec<_>, BaoError>>()?
         .into_iter()
         .map(|func| {
@@ -158,7 +192,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
         .map(|(ty, result)| {
             generated
                 .insert_function(result.index, result.offset, &result.name, ty.cloned())
-                .map_err(|e| BaoError::from(e))
+                .map_err(BaoError::from)
         })
         .collect::<Result<_, BaoError>>()?;
 
@@ -178,7 +212,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
         .map(|(ty, result)| {
             generated
                 .insert_global(&result.name, result.index, result.offset, ty)
-                .map_err(|e| BaoError::from(e))
+                .map_err(BaoError::from)
         })
         .collect::<Result<_, BaoError>>()?;
 
@@ -188,6 +222,6 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     warnings.into_iter().for_each(|err| warn!("{}", err));
 
     // Finally, save the generated PDB to the path we calculated in the beginning
-    generated.commit(&path, &output)?;
+    generated.commit(path, &output)?;
     Ok(())
 }

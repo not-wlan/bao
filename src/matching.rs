@@ -6,7 +6,10 @@ use std::convert::TryInto;
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct BaoSymbol {
     pub(crate) name: String,
+    #[serde(default)]
     pub(crate) pattern: String,
+    #[serde(default)]
+    pub(crate) start_rva:usize,
     #[serde(default)]
     extra: isize,
     #[serde(default)]
@@ -30,7 +33,9 @@ fn add_signed(first: usize, second: isize) -> Option<usize> {
 impl BaoSymbol {
     pub fn find(&self, data: &[u8], imagebase: usize) -> Result<(usize, bool), BaoError> {
         let mut va = false;
-
+        if self.start_rva != 0 {
+            return Ok((self.start_rva + imagebase, true));
+        }
         let peek_bytes = |offset| -> Result<u32, BaoError> {
             let bfr: &[u8; 4] =
                 &data[offset..offset + 4]
