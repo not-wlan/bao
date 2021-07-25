@@ -96,7 +96,7 @@ The easiest way to run _bao_ is to use [Docker](https://www.docker.com/):
 ~$ docker build . -t bao:latest
 ~$ docker run -v /path/to/project:/project -it bao:latest
 #$ cd /project
-#$ bao -o vac.pdb -c vac.json vac.dll structs.c
+#$ bao-pdb -o vac.pdb -c vac.json vac.dll structs.c
 ```
 
 The first three commands are only necessary on your first run or after an update of _bao_.

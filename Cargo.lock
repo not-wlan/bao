@@ -38,8 +38,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
-name = "bao"
-version = "0.1.0"
+name = "bao-pdb"
+version = "0.2.0"
 dependencies = [
  "clang",
  "clang-sys",
@@ -328,8 +328,9 @@ checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
 
 [[package]]
 name = "pdb_wrapper"
-version = "0.1.0"
-source = "git+https://github.com/jfm535/pdb_wrapper#efe53023a516c39b92e6f8fe6346cfa8d73a3d7d"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "077a5c282c130f8f6576886c6e0fe7d21f1c64489458d43edb2077be69198f0c"
 dependencies = [
  "bindgen",
  "cmake",
