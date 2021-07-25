@@ -188,13 +188,11 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     // table.
     pe.find_symbols(config.functions, &raw_pe, &mut warnings)
         .into_iter()
-        .map(|result| (func_types.get(&result.name), result))
-        .map(|(ty, result)| {
+        .map(|result| (func_types.get(&result.name), result)).try_for_each(|(ty, result)| {
             generated
                 .insert_function(result.index, result.offset, &result.name, ty.cloned())
                 .map_err(BaoError::from)
-        })
-        .collect::<Result<_, BaoError>>()?;
+        })?;
 
     // Pre-process global variables to `BaoType`. This way we can just call get on
     // the HashMap and don't have to lazily evaluate the code.
@@ -208,13 +206,11 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     // Insert the global variables with types, if they're specified.
     pe.find_symbols(config.globals, &raw_pe, &mut warnings)
         .into_iter()
-        .map(|result| (globals.get(&result.name), result))
-        .map(|(ty, result)| {
+        .map(|result| (globals.get(&result.name), result)).try_for_each(|(ty, result)| {
             generated
                 .insert_global(&result.name, result.index, result.offset, ty)
                 .map_err(BaoError::from)
-        })
-        .collect::<Result<_, BaoError>>()?;
+        })?;
 
     // Inform the user about warnings that may have occured during the pattern
     // matching procedure. These warnings are non-critical and shouldn't lead to
