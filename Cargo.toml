@@ -13,8 +13,8 @@ serde_derive = "1.0"
 simplelog = "0.8.0"
 log = "~0.4"
 clap = "2.33"
-uuid = "0.8.2"
-rand = "0.8.0"
+uuid = { version = "0.8", features = ["v4"] }
+
 [dependencies.clang-sys]
 version = "1.2.0"
 features = ["clang_11_0"]
@@ -22,7 +22,7 @@ features = ["clang_11_0"]
 [dependencies.pdb_wrapper]
 git = "https://github.com/jfm535/pdb_wrapper"
 default-features = false
-features = ["llvm_13"]
+
 [dependencies.clang]
 version = "1.0.3"
 features = ["clang_10_0"]
@@ -31,6 +31,6 @@ features = ["clang_10_0"]
 version = "~0.2"
 features = ["std"]
 [features]
-default = ["llvm_10"]
-llvm_10 = []
-llvm_13 = []
+default = ["llvm_13"]
+llvm_10 = ["pdb_wrapper/llvm_10"]
+llvm_13 = ["pdb_wrapper/llvm_13"]

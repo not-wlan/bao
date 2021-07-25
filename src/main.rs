@@ -9,32 +9,16 @@ use crate::{
     parsing::{BaoTU, BaoType},
     pe::BaoPE,
 };
+use clang::diagnostic::Severity;
 use clap::{App, Arg};
 use log::{error, info, warn};
 use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 use std::{collections::HashMap, convert::TryFrom, error::Error};
-use clang::diagnostic::Severity;
-use rand::Rng;
 
 mod error;
 mod matching;
 mod parsing;
 mod pe;
-#[cfg(not(feature = "llvm_13"))]
-fn get_pdb(pe: &BaoPE) -> Result<pdb_wrapper::PDB, pdb_wrapper::Error> {
-    pdb_wrapper::PDB::new(pe.is_64)
-}
-
-#[cfg(feature = "llvm_13")]
-fn get_pdb(pe: &BaoPE) -> Result<pdb_wrapper::PDB, pdb_wrapper::Error> {
-    if let Some(pe_original_pdb_data_access) = pe.debug_data {
-        if let Some(innerdata) = pe_original_pdb_data_access.codeview_pdb70_debug_info {
-            return pdb_wrapper::PDB::new(pe.is_64, innerdata.age, innerdata.codeview_signature, innerdata.signature);
-        }
-    }
-    let myarray:[u8; 16] = rand::thread_rng().gen();
-    return pdb_wrapper::PDB::new(pe.is_64, 1, 0, *uuid::Uuid::from_bytes(myarray).as_bytes());
-}
 
 pub fn main() -> Result<(), Box<dyn Error>> {
     CombinedLogger::init(vec![TermLogger::new(
@@ -119,32 +103,49 @@ pub fn main() -> Result<(), Box<dyn Error>> {
 
     let clang = Clang::new()?;
     let index = Index::new(&clang, false, false);
-    let mut args = Vec::new();
-    let coptions = matches.values_of("coptions");
-    if let Some(copts) = coptions {
-        for coption in copts {
-            let unquoted = coption.replace("\"","");
-            args.push(unquoted);
-        }
-    }
-    if !(pe.is_64) {
+
+    let mut args = matches
+        .values_of("coptions")
+        .map(|values| {
+            values
+                .map(|value| value.replace('\"', ""))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    if !pe.is_64 {
         args.push(String::from("-m32"));
     }
-    let v2: Vec<&str> = args.iter().map(|s| &**s).collect();
-    let v3 = v2.as_slice();
-    let tu = BaoTU::from(index.parser(source).arguments(v3).parse()?);
-    let mut generated = get_pdb(&pe)?;
+
+    let tu = BaoTU::from(index.parser(source).arguments(&args).parse()?);
+
+    #[cfg(not(feature = "llvm_13"))]
+    let mut generated = pdb_wrapper::PDB::new(pe.is_64)?;
+
+    #[cfg(feature = "llvm_13")]
+    let mut generated = {
+        let guid = pe
+            .debug_data
+            .and_then(|dbg| dbg.codeview_pdb70_debug_info)
+            .map(|code_view| code_view.signature)
+            .unwrap_or_else(|| *uuid::Uuid::new_v4().as_bytes());
+
+        pdb_wrapper::PDB::new(pe.is_64, 1, 0, guid)
+    }?;
 
     if tu.has_errors() {
-        let mut significant_error_found = false;
-        for error in tu.get_diagnostics() {
-            if error.get_severity() > Severity::Warning {
-                significant_error_found = true;
-            }
-            error!("{}", error);
-        }
+        let has_errors = tu
+            .get_diagnostics()
+            .iter()
+            .any(|diag| diag.get_severity() > Severity::Warning);
+
+        tu.get_diagnostics()
+            .iter()
+            .for_each(|err| error!("{}", err));
+
         info!("Please fix these errors before continuing!");
-        if significant_error_found {
+
+        if has_errors {
             return Ok(());
         }
     }
@@ -191,7 +192,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
         .map(|(ty, result)| {
             generated
                 .insert_function(result.index, result.offset, &result.name, ty.cloned())
-                .map_err( BaoError::from)
+                .map_err(BaoError::from)
         })
         .collect::<Result<_, BaoError>>()?;
 
