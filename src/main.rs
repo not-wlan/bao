@@ -153,13 +153,29 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     let funcs = tu.get_entities(EntityKind::FunctionDecl);
     let structs = tu.get_entities(EntityKind::StructDecl);
     let globals = tu.get_entities(EntityKind::VarDecl);
-
+    let classes = tu.get_entities(EntityKind::ClassDecl);
+    let namespaces = tu.get_entities(EntityKind::Namespace);
+    let methods = tu.get_entities(EntityKind::Method);
+    let fields = tu.get_entities(EntityKind::FieldDecl);
+    let constructors = tu.get_entities(EntityKind::Constructor);
+    let destructors = tu.get_entities(EntityKind::Destructor);
+    let function_templates = tu.get_entities(EntityKind::FunctionTemplate);
+    let class_templates = tu.get_entities(EntityKind::ClassTemplate);
+    let class_templates_partial = tu.get_entities(EntityKind::ClassTemplatePartialSpecialization);
     let mut warnings = vec![];
 
     info!("Parsed {} function definitions.", funcs.len());
     info!("Parsed {} struct definitions.", structs.len());
     info!("Parsed {} global variable definitions.", globals.len());
-
+    info!("Parsed {} class definitions.", classes.len());
+    info!("Parsed {} namespace definitions.", namespaces.len());
+    info!("Parsed {} method definitions.", methods.len());
+    info!("Parsed {} field definitions.", fields.len());
+    info!("Parsed {} constructor definitions.", constructors.len());
+    info!("Parsed {} destructor definitions.", destructors.len());
+    info!("Parsed {} function template definitions.", function_templates.len());
+    info!("Parsed {} class template definitions.", class_templates.len());
+    info!("Parsed {} class template partial definitions.", class_templates_partial.len());
     // Parse structs first so they may be used by global variables and functions.
     structs
         .into_iter()
