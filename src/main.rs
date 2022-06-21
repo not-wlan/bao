@@ -12,7 +12,7 @@ use crate::{
 use clang::diagnostic::Severity;
 use clap::{App, Arg};
 use log::{error, info, warn};
-use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
+use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
 use std::{collections::HashMap, convert::TryFrom, error::Error};
 
 mod error;
@@ -25,6 +25,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
         LevelFilter::Info,
         Config::default(),
         TerminalMode::Mixed,
+        ColorChoice::Auto,
     )])?;
 
     let matches = App::new("bao")
@@ -188,7 +189,8 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     // table.
     pe.find_symbols(config.functions, &raw_pe, &mut warnings)
         .into_iter()
-        .map(|result| (func_types.get(&result.name), result)).try_for_each(|(ty, result)| {
+        .map(|result| (func_types.get(&result.name), result))
+        .try_for_each(|(ty, result)| {
             generated
                 .insert_function(result.index, result.offset, &result.name, ty.cloned())
                 .map_err(BaoError::from)
@@ -206,7 +208,8 @@ pub fn main() -> Result<(), Box<dyn Error>> {
     // Insert the global variables with types, if they're specified.
     pe.find_symbols(config.globals, &raw_pe, &mut warnings)
         .into_iter()
-        .map(|result| (globals.get(&result.name), result)).try_for_each(|(ty, result)| {
+        .map(|result| (globals.get(&result.name), result))
+        .try_for_each(|(ty, result)| {
             generated
                 .insert_global(&result.name, result.index, result.offset, ty)
                 .map_err(BaoError::from)
