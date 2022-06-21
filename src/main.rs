@@ -62,6 +62,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
         )
         .arg(
             Arg::with_name("coptions")
+                .help("pass options like -I to libclang")
                 .short("d")
                 .long("coptions")
                 .required(false)
